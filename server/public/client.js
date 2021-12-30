@@ -16,6 +16,13 @@ async function createPlant() {
 
   const response = await graphql(query, { eoloPlant: { city }});
 
+  if (response.errors) {
+    console.error(response.errors[0].message);
+    console.warn(response.data);
+    enableCreationButton();
+    return;
+  }
+
   const plant = response.data.createEoloPlant;
 
   console.log(JSON.stringify(plant));
@@ -23,7 +30,6 @@ async function createPlant() {
   createPlantView(plant);
 
   enableCreationButton();
-
 }
 
 async function getAllPlants() {
@@ -41,6 +47,41 @@ async function getAllPlants() {
   const plants = response.data.eoloPlants;
   
   plants.map(createPlantView);
+}
+
+function getWebSocketConnection() {
+  console.log("Connecting server via web socket.");
+
+  const webSocket = new WebSocket("ws://localhost:3001/notifications");
+
+  webSocket.onopen = function (e) {
+    console.log("[open] WebSocket connection established!");
+  };
+
+  webSocket.onmessage = function (event) {
+    console.log(`[message] Data received from server: ${event.data}`);
+  };
+
+  webSocket.onclose = function (event) {
+
+    const message = event.wasClean
+        ? `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
+        : '[close] Connection died.';
+
+    console.log(message);
+  };
+
+  webSocket.onerror = function (error) {
+    console.log(`[error] ${error.message}`);
+  };
+
+  return webSocket;
+}
+
+async function sendMessage() {
+  console.log("sending message");
+  myWebSocket.send("Hello Server, my name is John");
+  console.log("WebSocket message sent");
 }
 
 function deletePlant(id) {
@@ -132,3 +173,4 @@ function createOrUpdatePlanView(plant) {
 // -------------
 
 getAllPlants();
+const myWebSocket = getWebSocketConnection();
