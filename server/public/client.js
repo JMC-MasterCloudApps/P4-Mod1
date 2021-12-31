@@ -60,6 +60,7 @@ function getWebSocketConnection() {
 
   webSocket.onmessage = function (event) {
     console.log(`[message] Data received from server: ${event.data}`);
+    displayProgress(event.data);
   };
 
   webSocket.onclose = function (event) {
@@ -167,6 +168,16 @@ function createOrUpdatePlanView(plant) {
   `;
 
     document.querySelector('#plant-' + plant.id).innerHTML = htmlContent;
+  }
+}
+
+async function displayProgress(progress) {
+  const progressText = document.querySelector('#new-plant');
+  progressText.textContent = `New plant ${progress}%`;
+
+  if (progress === '100') {
+    await new Promise(r => setTimeout(r, 2000));
+    progressText.textContent = `New plant completed`;
   }
 }
 
