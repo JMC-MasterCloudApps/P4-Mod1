@@ -8,6 +8,8 @@ const WEB_SOCKET = {
     port: 3001,
     path: '/notifications'
 };
+const RABBITMQ_URL = 'amqp://guest:guest@localhost';
+const RABBITMQ_NOTIFY_CHANNEL = 'eoloplantCreationProgressNotifications';
 
 await sequelize.sync();
 console.log('Connected to MySQL');
@@ -17,11 +19,11 @@ server.listen(SERVER_PORT, () => console.log(`Server listening on port ${SERVER_
 export const webSocketServer = new WebSocketServer(WEB_SOCKET);
 webSocketServer.on('connection', ws => {
 
-    console.log('\nClient connected to WebSocket');
-    console.log(WEB_SOCKET);
-    console.log('\n');
+    console.log(`[ws]\nClient connected. ${JSON.stringify(WEB_SOCKET)}\n`);
+
     ws.on('message', msg => {
-        console.log('Message received:' + msg);
+        console.log('');
+        console.log('[ws]\nMessage received:' + msg);
         ws.send(msg);
     });
 
@@ -45,21 +47,27 @@ async function listenRabbitMQ(ws) {
 
     process.on('exit', (code) => {
         channel.close();
-        console.log(`Closing rabbitmq channel`);
+        console.log(`[rmq]\nClosing channel ${RABBITMQ_NOTIFY_CHANNEL}`);
     });
 
-    const rabbitClient = await connect('amqp://guest:guest@localhost');
-    const channelName = "eoloplantCreationProgressNotifications";
+    const rabbitClient = await connect(RABBITMQ_URL);
 
     channel = await rabbitClient.createChannel();
-    channel.assertQueue(channelName, {durable: false});
+    channel.assertQueue(RABBITMQ_NOTIFY_CHANNEL, {durable: false});
 
-    channel.consume(channelName, (msg) => {
+    channel.consume(RABBITMQ_NOTIFY_CHANNEL, (msg) => {
 
-        console.log("Consumed from queue: '", msg.content.toString()+ "'");
-        console.log(`${JSON.parse(msg.content).progress}%`);
-        ws.send(JSON.parse(msg.content).progress);
+        const message = msg.content.toString();
+        console.log(`[rmq]\nConsumed from queue: '${message}'\n`);
+        //console.log(`[ws]\nSending notification: '${message}'\n`);
+        //ws.send(message);
+        sendNotification(message, ws);
 
     }, { noAck: true });
+}
+
+function sendNotification(message, ws) {
+    console.log(`[ws]\nSending notification: '${message}'\n`);
+    ws.send(message);
 }
 

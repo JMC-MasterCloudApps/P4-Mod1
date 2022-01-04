@@ -3,43 +3,44 @@ import { requestWeather } from '../clients/weather/weatherClient.js';
 import { requestLandscape } from '../clients/topo/topoClient.js';
 import { connect } from 'amqplib';
 
-export async function createEoloPlant(city) {
+export async function createEoloPlant(plant) {
 
-    console.log('Create EoloPlant in city: ' + city);
-    await createEolicPlant();
+    //const eoloplant = { city, planning: city, progress: '0%' };
 
-    const eoloplant = { city, planning: city };
+    createEolicPlant(plant);
 
-    await Promise.all([
-        getWeather(eoloplant),
-        getLandscape(eoloplant)
-    ]);
+    // TODO move to planner
+//    Promise.all([
+//        getWeather(plant),
+//        getLandscape(plant)
+//    ]);
 
-    await simulateProcessWaiting();
+    // TODO Delete me
+//    simulateProcessWaiting();
 
-    processPlanning(eoloplant);
+    // TODO move to planner
+    processPlanning(plant);
 
-    return eoloplant;
+    return plant;
 }
 
-async function createEolicPlant() {
+async function createEolicPlant(eoloplant) {
 
+    const RABBITMQ_URL = 'amqp://guest:guest@localhost';
+    const RABBITMQ_REQUEST_CHANNEL = 'eoloplantCreationRequests';
     let channel = null;
 
     process.on('exit', (code) => {
         channel.close();
-        console.log(`Closing rabbitmq channel`);
+        console.log(`[rmq]\nClosing channel ${RABBITMQ_REQUEST_CHANNEL}\n`);
     });
 
-    const rabbitClient = await connect('amqp://guest:guest@localhost');
-    const data = '{"id":1, "city":"Madrid"}';
-    const channelName = "eoloplantCreationRequests";
-
+    const rabbitClient = await connect(RABBITMQ_URL);
     channel = await rabbitClient.createChannel();
-    channel.assertQueue(channelName,  {durable: false});
-    channel.sendToQueue(channelName, Buffer.from(data));
+    channel.assertQueue(RABBITMQ_REQUEST_CHANNEL,  {durable: false});
+    channel.sendToQueue(RABBITMQ_REQUEST_CHANNEL, Buffer.from(JSON.stringify(eoloplant)));
 
-    console.log("Produced to queue: '" + data + "'");
+    console.log(`[rmq]\nPublished to queue '${JSON.stringify(eoloplant)}'\n`);
 }
 
 async function getWeather(eoloplant) {
@@ -65,6 +66,7 @@ function addPlanning(eoloplant, planning) {
 }
 
 function processPlanning(eoloplant) {
+    eoloplant.planning = eoloplant.city;
     eoloplant.planning = eoloplant.planning.match("^[A-Ma-m].*") ?
         eoloplant.planning.toLowerCase() :
         eoloplant.planning.toUpperCase();

@@ -11,9 +11,11 @@ async function createPlant() {
       id
       city
       planning
+      progress
     }
   }`;
 
+  console.log(`[graph-ql] Sending request for '${city}'`);
   const response = await graphql(query, { eoloPlant: { city }});
 
   if (response.errors) {
@@ -25,10 +27,11 @@ async function createPlant() {
 
   const plant = response.data.createEoloPlant;
 
+  console.log(`[graph-ql] Response:`);
   console.log(JSON.stringify(plant));
 
   createPlantView(plant);
-
+  displayPlantProgress(plant);
   enableCreationButton();
 }
 
@@ -44,36 +47,40 @@ async function getAllPlants() {
 
   const response = await graphql(query);
 
+  console.log(`[graph-ql] Response:`);
+  console.log(response.data);
   const plants = response.data.eoloPlants;
   
   plants.map(createPlantView);
 }
 
 function getWebSocketConnection() {
-  console.log("Connecting server via web socket.");
+  console.log("[ws] Connecting server...");
 
-  const webSocket = new WebSocket("ws://localhost:3001/notifications");
+  const webSocketUrl = "ws://localhost:3001/notifications";
+  const webSocket = new WebSocket(webSocketUrl);
 
   webSocket.onopen = function (e) {
-    console.log("[open] WebSocket connection established!");
+    console.log("[ws-open] Connection established!");
   };
 
   webSocket.onmessage = function (event) {
-    console.log(`[message] Data received from server: ${event.data}`);
-    displayProgress(event.data);
+    console.log(`[ws-message] From server: '${event.data}'`);
+    displayPlantProgress(JSON.parse(event.data));
+    //displayProgress(event.data);
   };
 
   webSocket.onclose = function (event) {
 
     const message = event.wasClean
-        ? `[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
-        : '[close] Connection died.';
+        ? `[ws-close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
+        : '[ws-close] Connection died.';
 
     console.log(message);
   };
 
   webSocket.onerror = function (error) {
-    console.log(`[error] ${error.message}`);
+    console.log(`[ws-error] ${error.message}`);
   };
 
   return webSocket;
@@ -158,7 +165,7 @@ function createOrUpdatePlanView(plant) {
       </div>
       <div class="card-body px-2">
         <ul class="list-unstyled mt-3 mb-4">
-          <li class="weather">Planning: ${plant.planning}</li>
+          <li id="planning-${plant.id}" class="weather">Planning: ${plant.planning}</li>
         </ul>
         <div class="d-flex align-items-center">
           <button type="button" onClick="deletePlant(${plant.id})" class="btn btn-danger btn-sm d-none><i class="fas fa-trash-alt"></i>Delete</button>
@@ -181,6 +188,12 @@ async function displayProgress(progress) {
     await new Promise(r => setTimeout(r, 5000));
     progressText.textContent = '';
   }
+}
+
+async function displayPlantProgress(plant) {
+
+  const plantElement = document.querySelector(`#planning-${plant.id}`);
+  plantElement.textContent = `Planning: ${plant.progress}`;
 }
 
 // -------------
