@@ -32,7 +32,6 @@ async function createPlant() {
 
   createPlantView(plant);
   displayPlantProgress(plant);
-  enableCreationButton();
 }
 
 async function getAllPlants() {
@@ -67,7 +66,6 @@ function getWebSocketConnection() {
   webSocket.onmessage = function (event) {
     console.log(`[ws-message] From server: '${event.data}'`);
     displayPlantProgress(JSON.parse(event.data));
-    //displayProgress(event.data);
   };
 
   webSocket.onclose = function (event) {
@@ -178,22 +176,17 @@ function createOrUpdatePlanView(plant) {
   }
 }
 
-async function displayProgress(progress) {
-  const progressText = document.querySelector('#new-plant');
-  progressText.textContent = `New plant ${progress}%`;
-
-  if (progress === '100') {
-    await new Promise(r => setTimeout(r, 1500));
-    progressText.textContent = 'New plant completed';
-    await new Promise(r => setTimeout(r, 5000));
-    progressText.textContent = '';
-  }
-}
-
 async function displayPlantProgress(plant) {
 
   const plantElement = document.querySelector(`#planning-${plant.id}`);
   plantElement.textContent = `Planning: ${plant.progress}`;
+
+  if (plant.completed) {
+    await new Promise(r => setTimeout(r, 1500));
+    createOrUpdatePlanView(plant);
+    enableCreationButton();
+  }
+
 }
 
 // -------------

@@ -7,7 +7,7 @@ export async function createEoloPlant(plant) {
 
     //const eoloplant = { city, planning: city, progress: '0%' };
 
-    createEolicPlant(plant);
+    publishToRequestsQueue(plant);
 
     // TODO move to planner
 //    Promise.all([
@@ -15,16 +15,13 @@ export async function createEoloPlant(plant) {
 //        getLandscape(plant)
 //    ]);
 
-    // TODO Delete me
-//    simulateProcessWaiting();
-
     // TODO move to planner
-    processPlanning(plant);
+    //processPlanning(plant);
 
     return plant;
 }
 
-async function createEolicPlant(eoloplant) {
+async function publishToRequestsQueue(eoloplant) {
 
     const RABBITMQ_URL = 'amqp://guest:guest@localhost';
     const RABBITMQ_REQUEST_CHANNEL = 'eoloplantCreationRequests';

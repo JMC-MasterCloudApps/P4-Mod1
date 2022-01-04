@@ -2,6 +2,7 @@ import { server } from './express.js';
 import { sequelize } from './mysql.js';
 import { WebSocketServer } from 'ws';
 import { connect } from 'amqplib';
+import { EoloPlant } from './models/EoloPlant.js';
 
 const SERVER_PORT = 3000;
 const WEB_SOCKET = {
@@ -16,14 +17,13 @@ console.log('Connected to MySQL');
 
 server.listen(SERVER_PORT, () => console.log(`Server listening on port ${SERVER_PORT}!`));
 
-export const webSocketServer = new WebSocketServer(WEB_SOCKET);
+const webSocketServer = new WebSocketServer(WEB_SOCKET);
 webSocketServer.on('connection', ws => {
 
     console.log(`[ws]\nClient connected. ${JSON.stringify(WEB_SOCKET)}\n`);
 
     ws.on('message', msg => {
-        console.log('');
-        console.log('[ws]\nMessage received:' + msg);
+        console.log(`[ws]\nMessage received: ${msg}`);
         ws.send(msg);
     });
 
@@ -58,15 +58,24 @@ async function listenRabbitMQ(ws) {
     channel.consume(RABBITMQ_NOTIFY_CHANNEL, (msg) => {
 
         const message = msg.content.toString();
+        saveIfCompleted(JSON.parse(message));
         console.log(`[rmq]\nConsumed from queue: '${message}'\n`);
-        //console.log(`[ws]\nSending notification: '${message}'\n`);
-        //ws.send(message);
         sendNotification(message, ws);
 
     }, { noAck: true });
 }
 
-function sendNotification(message, ws) {
+async function saveIfCompleted(plant) {
+
+    if (!plant.completed) {
+        return;
+    }
+
+    EoloPlant.update(plant, { where: { id: plant.id } });
+    console.log('Plant saved.');
+}
+
+async function sendNotification(message, ws) {
     console.log(`[ws]\nSending notification: '${message}'\n`);
     ws.send(message);
 }

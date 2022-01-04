@@ -29,8 +29,8 @@ export async function postEoloPlant(eoloPlantCreationRequest) {
 
     debug('createEoloPlant', eoloPlantCreationRequest);
 
-    let plant = await EoloPlant.create({city: eoloPlantCreationRequest.city, planning: ''});
-    plant = await createEoloPlant(plant);
+    let plant = await EoloPlant.create({city: eoloPlantCreationRequest.city, planning: eoloPlantCreationRequest.city});
+    plant = createEoloPlant(plant);
 
     EoloPlant.update(plant, { where: { id: plant.id } });
 
