@@ -176,8 +176,10 @@ async function displayProgress(progress) {
   progressText.textContent = `New plant ${progress}%`;
 
   if (progress === '100') {
-    await new Promise(r => setTimeout(r, 2000));
-    progressText.textContent = `New plant completed`;
+    await new Promise(r => setTimeout(r, 1500));
+    progressText.textContent = 'New plant completed';
+    await new Promise(r => setTimeout(r, 5000));
+    progressText.textContent = '';
   }
 }
 

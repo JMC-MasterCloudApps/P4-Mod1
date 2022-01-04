@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableScheduling
 public class PlannerApplication {
 
 	public static final String NEW_PLANT_QUEUE = "eoloplantCreationRequests";

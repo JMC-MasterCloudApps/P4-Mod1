@@ -1,10 +1,12 @@
 import { setTimeout } from 'timers/promises';
 import { requestWeather } from '../clients/weather/weatherClient.js';
 import { requestLandscape } from '../clients/topo/topoClient.js';
+import { connect } from 'amqplib';
 
 export async function createEoloPlant(city) {
 
     console.log('Create EoloPlant in city: ' + city);
+    await createEolicPlant();
 
     const eoloplant = { city, planning: city };
 
@@ -18,6 +20,26 @@ export async function createEoloPlant(city) {
     processPlanning(eoloplant);
 
     return eoloplant;
+}
+
+async function createEolicPlant() {
+
+    let channel = null;
+
+    process.on('exit', (code) => {
+        channel.close();
+        console.log(`Closing rabbitmq channel`);
+    });
+
+    const rabbitClient = await connect('amqp://guest:guest@localhost');
+    const data = '{"id":1, "city":"Madrid"}';
+    const channelName = "eoloplantCreationRequests";
+
+    channel = await rabbitClient.createChannel();
+    channel.assertQueue(channelName,  {durable: false});
+    channel.sendToQueue(channelName, Buffer.from(data));
+
+    console.log("Produced to queue: '" + data + "'");
 }
 
 async function getWeather(eoloplant) {
