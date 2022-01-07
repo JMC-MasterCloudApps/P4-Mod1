@@ -22,7 +22,6 @@ public class PlanningService {
 
     planning = stringPattern.matcher(planning).find() ? planning.toLowerCase() : planning.toUpperCase();
     log.info("processPlanning: '{}' ({}s)", planning, time/1000.0);
-    log.info("Weather finished! ({}s)", time/1000.0);
 
     return planning;
   }

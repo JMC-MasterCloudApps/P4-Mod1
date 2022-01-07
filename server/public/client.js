@@ -27,8 +27,7 @@ async function createPlant() {
 
   const plant = response.data.createEoloPlant;
 
-  console.log(`[graph-ql] Response:`);
-  console.log(JSON.stringify(plant));
+  console.log(`[graph-ql] Response: ${JSON.stringify(plant)}`);
 
   createPlantView(plant);
   displayPlantProgress(plant);
@@ -46,8 +45,7 @@ async function getAllPlants() {
 
   const response = await graphql(query);
 
-  console.log(`[graph-ql] Response:`);
-  console.log(response.data);
+  console.log(`[graph-ql] Response: ${JSON.stringify(response.data)}`);
   const plants = response.data.eoloPlants;
   
   plants.map(createPlantView);
@@ -64,7 +62,7 @@ function getWebSocketConnection() {
   };
 
   webSocket.onmessage = function (event) {
-    console.log(`[ws-message] From server: '${event.data}'`);
+    console.log(`[ws-msg] From server: '${event.data}'`);
     displayPlantProgress(JSON.parse(event.data));
   };
 

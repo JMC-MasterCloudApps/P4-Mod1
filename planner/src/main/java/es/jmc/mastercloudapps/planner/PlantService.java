@@ -7,6 +7,7 @@ import static org.springframework.boot.json.JsonParserFactory.getJsonParser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import es.jmc.mastercloudapps.planner.topo.TopoService;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +26,7 @@ import org.springframework.util.StringUtils;
 public class PlantService {
 
 	private static final String PLANNING_KEY = "planning";
+	private static final long WAITING_TIME = 500l;
 
 	private final RabbitTemplate rabbitTemplate;
 	private final WeatherService weatherService;
@@ -40,7 +42,9 @@ public class PlantService {
 		Map<String, Object> queueMessage = getJsonParser().parseMap(message);
 		cache.set((String) queueMessage.get(PLANNING_KEY));
 
-		var landscape = topoService.getLandscape()
+		final var city = (String) queueMessage.get("city");
+
+		var landscape = topoService.getLandscape(city)
 				.thenAccept(this::addPlanning)
 				.thenRun(() -> publishCompletionProgress(queueMessage));
 		var weather = weatherService.getWeather()
@@ -48,7 +52,7 @@ public class PlantService {
 				.thenRun(() -> publishCompletionProgress(queueMessage));
 
 		// simulate waiting from 0% to 25%
-		Thread.sleep(500l + getInstanceStrong().nextInt(500));
+		Thread.sleep(WAITING_TIME + getInstanceStrong().nextLong(WAITING_TIME));
 		publishCompletionProgress(queueMessage, "25%");
 
 		CompletableFuture.allOf(landscape, weather).join();

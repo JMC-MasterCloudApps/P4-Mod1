@@ -20,10 +20,10 @@ server.listen(SERVER_PORT, () => console.log(`Server listening on port ${SERVER_
 const webSocketServer = new WebSocketServer(WEB_SOCKET);
 webSocketServer.on('connection', ws => {
 
-    console.log(`[ws]\nClient connected. ${JSON.stringify(WEB_SOCKET)}\n`);
+    console.log(`[ws] Client connected. ${JSON.stringify(WEB_SOCKET)}\n`);
 
     ws.on('message', msg => {
-        console.log(`[ws]\nMessage received: ${msg}`);
+        console.log(`[ws] Message received: ${msg}`);
         ws.send(msg);
     });
 
@@ -47,7 +47,7 @@ async function listenRabbitMQ(ws) {
 
     process.on('exit', (code) => {
         channel.close();
-        console.log(`[rmq]\nClosing channel ${RABBITMQ_NOTIFY_CHANNEL}`);
+        console.log(`[rmq] Closing channel ${RABBITMQ_NOTIFY_CHANNEL}`);
     });
 
     const rabbitClient = await connect(RABBITMQ_URL);
@@ -59,7 +59,7 @@ async function listenRabbitMQ(ws) {
 
         const message = msg.content.toString();
         saveIfCompleted(JSON.parse(message));
-        console.log(`[rmq]\nConsumed from queue: '${message}'\n`);
+        console.log(`[rmq] Consumed from queue: '${message}'`);
         sendNotification(message, ws);
 
     }, { noAck: true });
@@ -76,7 +76,7 @@ async function saveIfCompleted(plant) {
 }
 
 async function sendNotification(message, ws) {
-    console.log(`[ws]\nSending notification: '${message}'\n`);
+    console.log(`[ws] Sending notification: '${message}'\n`);
     ws.send(message);
 }
 

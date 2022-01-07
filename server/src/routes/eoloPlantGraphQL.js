@@ -12,7 +12,7 @@ async function eoloPlant({ id }) {
 
 async function createEoloPlant({ eoloPlant }) {
 
-  console.log(`[graph-ql]\nRequest for new EoloPlant in city: ${eoloPlant.city}`);
+  console.log(`[graph-ql] Request for new EoloPlant in city: ${eoloPlant.city}`);
 
   const plant = await plantService.postEoloPlant(eoloPlant);
   return toDTO(plant);
