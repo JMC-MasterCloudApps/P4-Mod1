@@ -26,6 +26,7 @@ public class TopoService {
     log.info("Landscape finished! ({}s)", time/1000.0);
 
     Landscape landscape = client.requestLandscape(city);
+    log.info("TopoService response: {}", landscape.landscape());
 
     return CompletableFuture.completedFuture(landscape.landscape());
   }

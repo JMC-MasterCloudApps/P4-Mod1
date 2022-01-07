@@ -8,6 +8,7 @@ import static org.springframework.boot.json.JsonParserFactory.getJsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.jmc.mastercloudapps.planner.topo.TopoService;
+import es.jmc.mastercloudapps.planner.weather.WeatherService;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +48,7 @@ public class PlantService {
 		var landscape = topoService.getLandscape(city)
 				.thenAccept(this::addPlanning)
 				.thenRun(() -> publishCompletionProgress(queueMessage));
-		var weather = weatherService.getWeather()
+		var weather = weatherService.getWeather(city)
 				.thenAccept(this::addPlanning)
 				.thenRun(() -> publishCompletionProgress(queueMessage));
 

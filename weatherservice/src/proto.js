@@ -13,4 +13,4 @@ const wheatherServiceProto = loadPackageDefinition(loadSync(protoPath,
     oneofs: true
   }));
 
-export const WeatherService = wheatherServiceProto.es.codeurjc.mastercloudapps.planner.grpc.WeatherService;
+export const WeatherService = wheatherServiceProto.es.jmc.mastercloudapps.planner.weather.WeatherService;
