@@ -27,20 +27,10 @@ webSocketServer.on('connection', ws => {
         ws.send(msg);
     });
 
-//    simulateProgress(ws);
     listenRabbitMQ(ws);
 
 });
 console.log(`Web socket server listening on port ${webSocketServer.options.port}!`)
-
-async function simulateProgress(ws) {
-
-    for (const percentage of [25, 50, 75, 100]) {
-        console.log(`Sending ${percentage}%`);
-        await new Promise(r => setTimeout(r, 1500));
-        ws.send(percentage);
-    }
-}
 
 async function listenRabbitMQ(ws) {
     let channel = null;
@@ -58,21 +48,19 @@ async function listenRabbitMQ(ws) {
     channel.consume(RABBITMQ_NOTIFY_CHANNEL, (msg) => {
 
         const message = msg.content.toString();
-        saveIfCompleted(JSON.parse(message));
+        updateProgress(JSON.parse(message));
         console.log(`[rmq] Consumed from queue: '${message}'`);
         sendNotification(message, ws);
 
     }, { noAck: true });
 }
 
-async function saveIfCompleted(plant) {
+async function updateProgress(plant) {
 
-    if (!plant.completed) {
-        return;
-    }
+    let message = plant.completed ? 'Plant created.' : `Progress completed: (${plant.progress})`;
+    console.log(message);
 
     EoloPlant.update(plant, { where: { id: plant.id } });
-    console.log('Plant saved.');
 }
 
 async function sendNotification(message, ws) {

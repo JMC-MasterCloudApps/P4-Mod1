@@ -1,15 +1,8 @@
-import { requestWeather } from '../clients/weather/weatherClient.js';
 import { connect } from 'amqplib';
 
 export async function createEoloPlant(plant) {
 
     publishToRequestsQueue(plant);
-
-    // TODO move to planner
-//    Promise.all([
-//        getWeather(plant),
-//        getLandscape(plant)
-//    ]);
 
     return plant;
 }
@@ -31,17 +24,4 @@ async function publishToRequestsQueue(eoloplant) {
     channel.sendToQueue(RABBITMQ_REQUEST_CHANNEL, Buffer.from(JSON.stringify(eoloplant)));
 
     console.log(`[rmq] Published to queue '${JSON.stringify(eoloplant)}'\n`);
-}
-
-async function getWeather(eoloplant) {
-
-    const weather = await requestWeather(eoloplant.city);
-
-    console.log('Weather: ' + weather);
-
-    addPlanning(eoloplant, weather);
-}
-
-function addPlanning(eoloplant, planning) {
-    eoloplant.planning += '-' + planning;
 }
