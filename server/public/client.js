@@ -15,7 +15,7 @@ async function createPlant() {
     }
   }`;
 
-  console.log(`[graph-ql] Sending request for '${city}'`);
+  console.log(`[graphQL] Request for 'createEoloPlant(${city})'`);
   const response = await graphql(query, { eoloPlant: { city }});
 
   if (response.errors) {
@@ -27,7 +27,7 @@ async function createPlant() {
 
   const plant = response.data.createEoloPlant;
 
-  console.log(`[graph-ql] Response: ${JSON.stringify(plant)}`);
+  console.log(`[graphQL] Response: ${JSON.stringify(plant)}`);
 
   createPlantView(plant);
   displayPlantProgress(plant);
@@ -43,9 +43,10 @@ async function getAllPlants() {
     }
   }`;
 
+  console.log(`[graphQL] Request for 'eoloPlants()'`);
   const response = await graphql(query);
 
-  console.log(`[graph-ql] Response: ${JSON.stringify(response.data)}`);
+  console.log(`[graphQL] Response: ${JSON.stringify(response.data)}`);
   const plants = response.data.eoloPlants;
   
   plants.map(createPlantView);
@@ -57,8 +58,8 @@ function getWebSocketConnection() {
   const webSocketUrl = "ws://localhost:3001/notifications";
   const webSocket = new WebSocket(webSocketUrl);
 
-  webSocket.onopen = function (e) {
-    console.log("[ws-open] Connection established!");
+  webSocket.onopen = function (event) {
+    console.log(`[ws-open] Connection established! (${event.currentTarget.url})`);
   };
 
   webSocket.onmessage = function (event) {
@@ -82,12 +83,6 @@ function getWebSocketConnection() {
   return webSocket;
 }
 
-async function sendMessage() {
-  console.log("sending message");
-  myWebSocket.send("Hello Server, my name is John");
-  console.log("WebSocket message sent");
-}
-
 function deletePlant(id) {
 
   const query = `mutation($id: ID!) {
@@ -98,6 +93,7 @@ function deletePlant(id) {
     }
   }`;
 
+  console.log(`[graphQL] Request for 'deleteEoloPlant(${id})'`);
   graphql(query, { id });
 
   deletePlantView(id);
