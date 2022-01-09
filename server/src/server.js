@@ -36,11 +36,14 @@ listenRabbitMQ().then(() => console.log('RabbitMQ listening.'));
 async function registerClient(wsClient, msg) {
 
     const ID = JSON.parse(msg).wsClientID;
-    console.log(`[ws] Recording client #${ID}`);
-    if (ID) {
-        console.log(`[ws] Client #${ID} recorded.`);
-        clients[ID] = wsClient;
+
+    if (!ID) {
+        console.error('[ws-subs] Failed.');
+        return;
     }
+    
+    console.log(`[ws-subs] #${ID}-client subscribed.`);
+    clients[ID] = wsClient;
 }
 
 async function listenRabbitMQ() {
@@ -59,17 +62,17 @@ async function listenRabbitMQ() {
     channel.consume(RABBITMQ_NOTIFY_CHANNEL, (msg) => {
 
         const message = msg.content.toString();
-        updateProgress(JSON.parse(message));
-        console.log(`[rmq] Consumed from queue: '${message}'`);
+        console.log(`[rmq] Consumed: '${message}'`);
+        updateProgressInDB(JSON.parse(message));
         sendNotification(message);
 
     }, { noAck: true });
 }
 
-async function updateProgress(plant) {
+async function updateProgressInDB(plant) {
 
     let message = plant.completed ? 'Plant created.' : `Progress completed: (${plant.progress})`;
-    console.log(message);
+    console.log(`[db] ${message}`);
 
     EoloPlant.update(plant, { where: { id: plant.id } });
 }
@@ -77,7 +80,7 @@ async function updateProgress(plant) {
 async function sendNotification(message) {
 
     const ID = JSON.parse(message).id;
-    console.log(`[ws-notify] Sending #${ID}-client: '${message}'\n`);
+    console.log(`[ws-notify] #${ID}-client: '${message}'\n`);
     let wsClient = clients[ID];
 
     if (wsClient) {

@@ -23,5 +23,5 @@ async function publishToRequestsQueue(eoloplant) {
     channel.assertQueue(RABBITMQ_REQUEST_CHANNEL,  {durable: false});
     channel.sendToQueue(RABBITMQ_REQUEST_CHANNEL, Buffer.from(JSON.stringify(eoloplant)));
 
-    console.log(`[rmq] Published to queue '${JSON.stringify(eoloplant)}'\n`);
+    console.log(`[rmq] Published: '${JSON.stringify(eoloplant)}'\n`);
 }

@@ -20,9 +20,9 @@ function exec(serviceName, command) {
 const services = new Map();
 
 services.set('weatherservice', exec('weatherservice', 'node src/server.js'));
-//services.set('toposervice', exec('toposervice', 'mvn spring-boot:run'));
+services.set('toposervice', exec('toposervice', 'mvn spring-boot:run'));
 services.set('server', exec('server', 'node src/server.js'));
-//services.set('planner', exec('planner', 'mvn spring-boot:run'));
+services.set('planner', exec('planner', 'mvn spring-boot:run'));
 
 process.on('SIGINT', async () => {
   for (var [name, cmd] of services) {

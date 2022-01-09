@@ -12,12 +12,13 @@ import es.jmc.mastercloudapps.planner.weather.WeatherService;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,49 +28,55 @@ import org.springframework.util.StringUtils;
 public class PlantService {
 
 	private static final String PLANNING_KEY = "planning";
-	private static final long WAITING_TIME = 500l;
+	private static final String ID = "id";
+	private static final long WAITING_TIME = 500L;
 
 	private final RabbitTemplate rabbitTemplate;
 	private final WeatherService weatherService;
 	private final TopoService topoService;
 	private final PlanningService planningService;
 
-	AtomicReference<String> cache = new AtomicReference<>("");
+	Map<Integer, String> planningById = new ConcurrentHashMap<>();
 
+	@Async
 	@RabbitListener(queues = NEW_PLANT_QUEUE, ackMode = "AUTO")
 	public void readNewPlantRequest(String message) throws InterruptedException, NoSuchAlgorithmException {
-
 		log.info("Message received in channel '{}': '{}'", NEW_PLANT_QUEUE, message);
 		Map<String, Object> queueMessage = getJsonParser().parseMap(message);
-		cache.set((String) queueMessage.get(PLANNING_KEY));
+
+		final var plantId = (Integer) queueMessage.get(ID);
+		var resultingPlanning = (String) queueMessage.get(PLANNING_KEY);
+		planningById.put(plantId, resultingPlanning);
 
 		final var city = (String) queueMessage.get("city");
 
 		var landscape = topoService.getLandscape(city)
-				.thenAccept(this::addPlanning)
-				.thenRun(() -> publishCompletionProgress(queueMessage));
+				.thenAccept(planning -> addPlanning(plantId, planning))
+				.thenRun(() -> publishCompletionProgress(queueMessage, plantId));
 		var weather = weatherService.getWeather(city)
-				.thenAccept(this::addPlanning)
-				.thenRun(() -> publishCompletionProgress(queueMessage));
+				.thenAccept(planning -> addPlanning(plantId, planning))
+				.thenRun(() -> publishCompletionProgress(queueMessage, plantId));
 
 		// simulate waiting from 0% to 25%
 		Thread.sleep(WAITING_TIME + getInstanceStrong().nextLong(WAITING_TIME));
-		publishCompletionProgress(queueMessage, "25%");
+		publishCompletionProgress(queueMessage, "25%", plantId);
 
 		CompletableFuture.allOf(landscape, weather).join();
-		cache.set(planningService.process(cache.get()));
-		publishCompletionProgress(queueMessage, "100%");
+		resultingPlanning = planningService.process(planningById.get(plantId));
+		planningById.put(plantId, resultingPlanning);
+		publishCompletionProgress(queueMessage, "100%", plantId);
 	}
 
-	private void addPlanning(String planning) {
+	private void addPlanning(Integer plantId, String planning) {
 
-		cache.set(cache.get() + '-' + planning);
-		log.info("addPlanning: '{}'", cache.get());
+		String currentPlanning = planningById.get(plantId);
+		planningById.put(plantId, currentPlanning + "-" + planning);
+		log.info("addPlanning: '{}'", planningById.get(plantId));
 	}
 
-	private void publishCompletionProgress(final Map<String, Object> queueMessage) {
+	private void publishCompletionProgress(final Map<String, Object> queueMessage, Integer plantId) {
 
-		boolean isLastOne = StringUtils.countOccurrencesOf(cache.get(), "-") == 2;
+		boolean isLastOne = StringUtils.countOccurrencesOf(planningById.get(plantId), "-") == 2;
 
 		queueMessage.put("completed", false);
 		queueMessage.put(PLANNING_KEY, null);
@@ -77,10 +84,10 @@ public class PlantService {
 		publish(queueMessage);
 	}
 
-	private void publishCompletionProgress(final Map<String, Object> queueMessage, String completion) {
+	private void publishCompletionProgress(final Map<String, Object> queueMessage, String completion, Integer plantId) {
 
 		queueMessage.put("completed", "100%".equals(completion));
-		queueMessage.put(PLANNING_KEY, "100%".equals(completion) ? cache.get() : null);
+		queueMessage.put(PLANNING_KEY, "100%".equals(completion) ? planningById.get(plantId) : null);
 		queueMessage.put("progress", completion);
 		publish(queueMessage);
 	}

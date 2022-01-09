@@ -19,7 +19,7 @@ public class WeatherService {
   @Async
   public CompletableFuture<String> getWeather(String city) throws InterruptedException, NoSuchAlgorithmException {
 
-    var time = 1000l + getInstanceStrong().nextInt(2000);
+    var time = 1000L + getInstanceStrong().nextInt(2000);
     Thread.sleep(time);
     log.info("Weather finished! ({}s)", time/1000.0);
 

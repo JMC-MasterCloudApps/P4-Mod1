@@ -32,7 +32,7 @@ async function createPlant() {
   console.log(`[graphQL] Response: ${JSON.stringify(plant)}`);
 
   myWebSocket.send(`{"wsClientID": ${plant.id}}`)
-  console.log(`[ws-send] {"wsClientID": ${plant.id}}`);
+  console.log(`[ws-subs] {"wsClientID": ${plant.id}}`);
 
   createPlantView(plant);
   displayPlantProgress(plant);

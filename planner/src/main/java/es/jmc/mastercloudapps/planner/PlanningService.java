@@ -15,7 +15,7 @@ public class PlanningService {
 
     log.info("processPlanning: '{}'", planning);
 
-    var time = 1000l + getInstanceStrong().nextInt(2000);
+    var time = 1000L + getInstanceStrong().nextInt(2000);
     Thread.sleep(time);
     final var alphabetFirstHalf = "^[A-Ma-m].*";
     Pattern stringPattern = Pattern.compile(alphabetFirstHalf);
