@@ -27,5 +27,5 @@ $ node build.js
 Ejecuta los servicios. En proyectos Java usa Maven. En proyectos Node usa esta tecnología directamente:
 
 ```
-$ node exec.js
+$ node run.js
 ```

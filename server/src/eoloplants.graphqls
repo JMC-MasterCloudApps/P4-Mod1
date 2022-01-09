@@ -13,6 +13,7 @@ type EoloPlant {
     id: ID!
     city: String!
     planning: String!
+    progress: String!
 }
 
 input EoloPlantInput {

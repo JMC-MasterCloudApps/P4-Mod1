@@ -2,13 +2,13 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 
-package es.codeurjc.mastercloudapps.planner.grpc;
+package es.jmc.mastercloudapps.planner.weather;
 
-message GetWeatherRequest { 
+message GetWeatherRequest {
   string city = 1;
 }
-message Weather { 
-  string city = 1; 
+message Weather {
+  string city = 1;
   string weather = 2;
 }
 

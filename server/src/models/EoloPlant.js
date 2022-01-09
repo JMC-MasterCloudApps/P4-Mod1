@@ -15,7 +15,11 @@ EoloPlant.init({
     type: DataTypes.STRING,
     allowNull: false
   },
-  planning: DataTypes.STRING
+  planning: DataTypes.STRING,
+  progress: {
+    type: DataTypes.STRING,
+    defaultValue: '0%'
+  }
 }, {
   sequelize,
   modelName: 'EoloPlant',

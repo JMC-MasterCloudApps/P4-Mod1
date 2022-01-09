@@ -1,5 +1,7 @@
 // Plant management functions
 
+const myWebSocket = getWebSocketConnection();
+
 async function createPlant() {
 
   const city = document.querySelector('#city').value;
@@ -11,19 +13,29 @@ async function createPlant() {
       id
       city
       planning
+      progress
     }
   }`;
 
+  console.log(`[graphQL] Request for 'createEoloPlant(${city})'`);
   const response = await graphql(query, { eoloPlant: { city }});
+
+  if (response.errors) {
+    console.error(response.errors[0].message);
+    console.warn(response.data);
+    enableCreationButton();
+    return;
+  }
 
   const plant = response.data.createEoloPlant;
 
-  console.log(JSON.stringify(plant));
+  console.log(`[graphQL] Response: ${JSON.stringify(plant)}`);
+
+  myWebSocket.send(`{"wsClientID": ${plant.id}}`)
+  console.log(`[ws-subs] {"wsClientID": ${plant.id}}`);
 
   createPlantView(plant);
-
-  enableCreationButton();
-
+  displayPlantProgress(plant);
 }
 
 async function getAllPlants() {
@@ -36,11 +48,45 @@ async function getAllPlants() {
     }
   }`;
 
+  console.log(`[graphQL] Request for 'eoloPlants()'`);
   const response = await graphql(query);
 
+  console.log(`[graphQL] Response: ${JSON.stringify(response.data)}`);
   const plants = response.data.eoloPlants;
   
   plants.map(createPlantView);
+}
+
+function getWebSocketConnection() {
+  console.log("[ws] Connecting server...");
+
+  const webSocketUrl = "ws://localhost:3001/notifications";
+  const webSocket = new WebSocket(webSocketUrl);
+
+  webSocket.onopen = function (event) {
+    console.log(`[ws-open] Connection established! (${event.currentTarget.url})`);
+  };
+
+  webSocket.onmessage = function (event) {
+    console.log(`[ws-msg] From server: '${event.data}'`);
+    displayPlantProgress(JSON.parse(event.data));
+  };
+
+  webSocket.onclose = function (event) {
+
+    const message = event.wasClean
+        ? `[ws-close] Connection closed cleanly, code=${event.code} reason=${event.reason}`
+        : '[ws-close] Connection died.';
+
+    console.log(message);
+    console.log(event);
+  };
+
+  webSocket.onerror = function (error) {
+    console.log(`[ws-error] ${error.message}`);
+  };
+
+  return webSocket;
 }
 
 function deletePlant(id) {
@@ -53,6 +99,7 @@ function deletePlant(id) {
     }
   }`;
 
+  console.log(`[graphQL] Request for 'deleteEoloPlant(${id})'`);
   graphql(query, { id });
 
   deletePlantView(id);
@@ -116,7 +163,7 @@ function createOrUpdatePlanView(plant) {
       </div>
       <div class="card-body px-2">
         <ul class="list-unstyled mt-3 mb-4">
-          <li class="weather">Planning: ${plant.planning}</li>
+          <li id="planning-${plant.id}" class="weather">Planning: ${plant.planning}</li>
         </ul>
         <div class="d-flex align-items-center">
           <button type="button" onClick="deletePlant(${plant.id})" class="btn btn-danger btn-sm d-none><i class="fas fa-trash-alt"></i>Delete</button>
@@ -127,6 +174,19 @@ function createOrUpdatePlanView(plant) {
 
     document.querySelector('#plant-' + plant.id).innerHTML = htmlContent;
   }
+}
+
+async function displayPlantProgress(plant) {
+
+  const plantElement = document.querySelector(`#planning-${plant.id}`);
+  plantElement.textContent = `Planning: ${plant.progress}`;
+
+  if (plant.completed) {
+    await new Promise(r => setTimeout(r, 1500));
+    createOrUpdatePlanView(plant);
+    enableCreationButton();
+  }
+
 }
 
 // -------------

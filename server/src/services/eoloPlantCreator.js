@@ -1,55 +1,27 @@
-import { setTimeout } from 'timers/promises';
-import { requestWeather } from '../clients/weather/weatherClient.js';
-import { requestLandscape } from '../clients/topo/topoClient.js';
+import { connect } from 'amqplib';
 
-export async function createEoloPlant(city) {
+export async function createEoloPlant(plant) {
 
-    console.log('Create EoloPlant in city: ' + city);
+    publishToRequestsQueue(plant);
 
-    const eoloplant = { city, planning: city };
-
-    await Promise.all([
-        getWeather(eoloplant),
-        getLandscape(eoloplant)
-    ]);
-
-    await simulateProcessWaiting();
-
-    processPlanning(eoloplant);
-
-    return eoloplant;
+    return plant;
 }
 
-async function getWeather(eoloplant) {
+async function publishToRequestsQueue(eoloplant) {
 
-    const weather = await requestWeather(eoloplant.city);
+    const RABBITMQ_URL = 'amqp://guest:guest@localhost';
+    const RABBITMQ_REQUEST_CHANNEL = 'eoloplantCreationRequests';
+    let channel = null;
 
-    console.log('Weather: ' + weather);
+    process.on('exit', (code) => {
+        channel.close();
+        console.log(`[rmq] Closing channel ${RABBITMQ_REQUEST_CHANNEL}\n`);
+    });
 
-    addPlanning(eoloplant, weather);
-}
+    const rabbitClient = await connect(RABBITMQ_URL);
+    channel = await rabbitClient.createChannel();
+    channel.assertQueue(RABBITMQ_REQUEST_CHANNEL,  {durable: false});
+    channel.sendToQueue(RABBITMQ_REQUEST_CHANNEL, Buffer.from(JSON.stringify(eoloplant)));
 
-async function getLandscape(eoloplant) {
-
-    const landscape = await requestLandscape(eoloplant.city);
-
-    console.log('Landscape: ' + landscape);
-
-    addPlanning(eoloplant, landscape);
-}
-
-function addPlanning(eoloplant, planning) {
-    eoloplant.planning += '-' + planning;
-}
-
-function processPlanning(eoloplant) {
-    eoloplant.planning = eoloplant.planning.match("^[A-Ma-m].*") ?
-        eoloplant.planning.toLowerCase() :
-        eoloplant.planning.toUpperCase();
-
-    console.log('Processed planning: ' + eoloplant.planning);
-}
-
-async function simulateProcessWaiting() {
-    await setTimeout(Math.random() * 2000 + 1000);
+    console.log(`[rmq] Published: '${JSON.stringify(eoloplant)}'\n`);
 }
