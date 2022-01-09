@@ -1,5 +1,7 @@
 // Plant management functions
 
+const myWebSocket = getWebSocketConnection();
+
 async function createPlant() {
 
   const city = document.querySelector('#city').value;
@@ -28,6 +30,9 @@ async function createPlant() {
   const plant = response.data.createEoloPlant;
 
   console.log(`[graphQL] Response: ${JSON.stringify(plant)}`);
+
+  myWebSocket.send(`{"wsClientID": ${plant.id}}`)
+  console.log(`[ws-send] {"wsClientID": ${plant.id}}`);
 
   createPlantView(plant);
   displayPlantProgress(plant);
@@ -74,6 +79,7 @@ function getWebSocketConnection() {
         : '[ws-close] Connection died.';
 
     console.log(message);
+    console.log(event);
   };
 
   webSocket.onerror = function (error) {
@@ -186,4 +192,3 @@ async function displayPlantProgress(plant) {
 // -------------
 
 getAllPlants();
-const myWebSocket = getWebSocketConnection();
